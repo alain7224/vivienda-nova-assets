@@ -1,4 +1,4 @@
-import { asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   commissionOperations,
@@ -51,6 +51,8 @@ export function getDefaultPublicSiteSettings() {
     whatsappStyle: "round" as const,
     whatsappAnimationEnabled: 1,
     whatsappAnimationSeconds: 30,
+    cryptoEnabled: 0,
+    cryptoAcceptedTypes: JSON.stringify(["BTC", "ETH", "USDC"]),
   };
 }
 
@@ -117,6 +119,15 @@ export async function getPropertyById(id: number) {
   if (!db) return undefined;
   const result = await db.select().from(properties).where(eq(properties.id, id)).limit(1);
   return result[0];
+}
+
+/** Datos básicos de varias viviendas a la vez, para el informe de visitas. */
+export async function getPropertiesByIds(ids: number[]) {
+  const db = await getDb();
+  if (!db || !ids.length) return [];
+  const wanted = new Set(ids);
+  const rows = await db.select({ id: properties.id, title: properties.title, city: properties.city }).from(properties);
+  return rows.filter((row) => wanted.has(row.id));
 }
 
 export async function createProperty(values: InsertProperty) {
@@ -268,16 +279,97 @@ export async function listReferralClicks() {
   return db.select().from(referralClicks).orderBy(desc(referralClicks.createdAt));
 }
 
-export async function createSiteVisit(visitorId: string, locale: string, page: string) {
+export type SiteVisitDetails = {
+  propertyId?: number | null;
+  referrer?: string | null;
+  deviceType?: "mobile" | "tablet" | "desktop" | null;
+  actionType?: "view" | "scroll" | "contact" | "reserve";
+  scrollDepth?: number | null;
+};
+
+export async function createSiteVisit(visitorId: string, locale: string, page: string, details: SiteVisitDetails = {}) {
   const db = await getDb();
   if (!db) return;
-  return db.insert(siteVisits).values({ visitorId, locale, page });
+  const scrollDepth = typeof details.scrollDepth === "number" && Number.isFinite(details.scrollDepth) ? Math.max(0, Math.min(100, Math.round(details.scrollDepth))) : null;
+  return db.insert(siteVisits).values({ visitorId, locale, page, propertyId: details.propertyId ?? null, referrer: details.referrer || null, deviceType: details.deviceType || null, actionType: details.actionType ?? "view", scrollDepth });
 }
 
 export async function listSiteVisits() {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(siteVisits).orderBy(desc(siteVisits.createdAt));
+}
+
+export type VisitReportFilters = { startDate?: Date; endDate?: Date };
+
+/** Visitas dentro de un rango de fechas opcional, más recientes primero. */
+export async function getVisitsByDateRange(filters: VisitReportFilters = {}) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions = [];
+  if (filters.startDate) conditions.push(gte(siteVisits.createdAt, filters.startDate));
+  if (filters.endDate) conditions.push(lte(siteVisits.createdAt, filters.endDate));
+  const base = db.select().from(siteVisits);
+  const rows = await (conditions.length ? base.where(and(...conditions)) : base);
+  return rows.sort((first, second) => second.createdAt.getTime() - first.createdAt.getTime());
+}
+
+/** Viviendas más vistas en el rango indicado. */
+export async function getTopPropertiesByViews(limit = 10, filters: VisitReportFilters = {}) {
+  const visits = (await getVisitsByDateRange(filters)).filter((visit) => visit.propertyId !== null && visit.propertyId !== undefined);
+  const totals = new Map<number, { views: number; visitors: Set<string> }>();
+  visits.forEach((visit) => {
+    const entry = totals.get(visit.propertyId as number) ?? { views: 0, visitors: new Set<string>() };
+    entry.views += 1;
+    entry.visitors.add(visit.visitorId);
+    totals.set(visit.propertyId as number, entry);
+  });
+  return Array.from(totals.entries())
+    .map(([propertyId, entry]) => ({ propertyId, views: entry.views, uniqueVisitors: entry.visitors.size }))
+    .sort((first, second) => second.views - first.views || second.uniqueVisitors - first.uniqueVisitors)
+    .slice(0, Math.max(1, limit));
+}
+
+/** Informe agregado para el panel privado: KPIs, serie diaria y clasificaciones. */
+export async function getAnalyticsReport(filters: VisitReportFilters = {}) {
+  const visits = await getVisitsByDateRange(filters);
+  const uniqueVisitors = new Set(visits.map((visit) => visit.visitorId)).size;
+  const visitsByDay = new Map<string, { visits: number; visitors: Set<string> }>();
+  visits.forEach((visit) => {
+    const day = visit.createdAt.toISOString().slice(0, 10);
+    const entry = visitsByDay.get(day) ?? { visits: 0, visitors: new Set<string>() };
+    entry.visits += 1;
+    entry.visitors.add(visit.visitorId);
+    visitsByDay.set(day, entry);
+  });
+  const daily = Array.from(visitsByDay.entries()).map(([date, entry]) => ({ date, visits: entry.visits, uniqueVisitors: entry.visitors.size })).sort((first, second) => first.date.localeCompare(second.date));
+  const devices = { mobile: 0, tablet: 0, desktop: 0, unknown: 0 };
+  visits.forEach((visit) => { devices[visit.deviceType ?? "unknown"] += 1; });
+  const localesCount = new Map<string, number>();
+  const pagesCount = new Map<string, number>();
+  const referrersCount = new Map<string, number>();
+  visits.forEach((visit) => {
+    localesCount.set(visit.locale, (localesCount.get(visit.locale) ?? 0) + 1);
+    pagesCount.set(visit.page, (pagesCount.get(visit.page) ?? 0) + 1);
+    if (visit.referrer) { const host = visit.referrer.replace(/^https?:\/\//i, "").split("/")[0] || visit.referrer; referrersCount.set(host, (referrersCount.get(host) ?? 0) + 1); }
+  });
+  const sortedEntries = (map: Map<string, number>) => Array.from(map.entries()).map(([label, count]) => ({ label, count })).sort((first, second) => second.count - first.count);
+  const topProperties = await getTopPropertiesByViews(10, filters);
+  const propertyRows = await getPropertiesByIds(topProperties.map((entry) => entry.propertyId));
+  const names = new Map(propertyRows.map((property) => [property.id, { title: property.title, city: property.city }]));
+  const withNames = topProperties.map((entry) => ({ ...entry, title: names.get(entry.propertyId)?.title ?? null, city: names.get(entry.propertyId)?.city ?? null }));
+  const scrolled = visits.filter((visit) => visit.scrollDepth !== null && visit.scrollDepth !== undefined);
+  const averageScrollDepth = scrolled.length ? Math.round(scrolled.reduce((total, visit) => total + (visit.scrollDepth ?? 0), 0) / scrolled.length) : null;
+  return {
+    totals: { visits: visits.length, uniqueVisitors, averageScrollDepth, topProperty: withNames[0] ?? null },
+    daily,
+    topProperties: withNames,
+    byDevice: Object.entries(devices).map(([label, count]) => ({ label, count })),
+    byLocale: sortedEntries(localesCount).slice(0, 12),
+    topPages: sortedEntries(pagesCount).slice(0, 10),
+    topReferrers: sortedEntries(referrersCount).slice(0, 10),
+    visits: visits.slice(0, 500),
+  };
 }
 
 export async function listCommissionOperations() {

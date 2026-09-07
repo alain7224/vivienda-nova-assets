@@ -33,6 +33,7 @@ const menuItems = [
   { icon: Plus, label: "Añadir vivienda", path: "/admin?panel=property" },
   { icon: FileSpreadsheet, label: "Importar viviendas", path: "/admin?panel=import" },
   { icon: BarChart3, label: "Secciones y carruseles", path: "/admin?panel=sections" },
+  { icon: BarChart3, label: "Analytics de visitas", path: "/admin?panel=analytics" },
   { icon: MapPinned, label: "Mapa de visitas", path: "/admin?panel=map" },
   { icon: UsersRound, label: "Vendedores", path: "/admin?panel=vendors" },
   { icon: CircleDollarSign, label: "Operaciones", path: "/admin?panel=operations" },
