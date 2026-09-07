@@ -446,3 +446,7 @@ h2 em { color: #d95f42; font-style: italic; }
 .property-card--frame { border: 1px solid #112f3f; box-shadow: 8px 8px 0 #d95f42; }
 .property-card--frame:hover { box-shadow: 11px 11px 0 #d95f42; }
 @media (prefers-reduced-motion: reduce) { .property-card--3d, .property-card--3d:hover { transform: none; } }
+.property-card--grid { border: 1px solid #d8d3ca; box-shadow: 0 8px 23px rgba(17,47,63,.08); }
+.property-card--minimal { background: transparent; box-shadow: none; }
+.property-card--minimal .property-photo-wrap { aspect-ratio: 2.1; }
+.property-card--minimal .property-description { display: none; }
