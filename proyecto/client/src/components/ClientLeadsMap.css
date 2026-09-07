@@ -1,0 +1,30 @@
+.client-leads-map { background: var(--paper); margin: 0 0 78px; padding: clamp(22px, 3.5vw, 44px); }
+.client-leads-map__heading { align-items: flex-start; display: flex; gap: 24px; justify-content: space-between; }
+.client-leads-map__heading h2 { font-size: clamp(36px, 4vw, 56px); line-height: .9; margin: 0; }
+.client-leads-map__heading > div > p:last-child { color: #667277; font-size: 12px; line-height: 1.6; margin: 17px 0 0; max-width: 580px; }
+.client-leads-map__count { align-items: center; border-left: 1px solid var(--line); color: var(--ink); display: grid; gap: 4px 9px; grid-template-columns: auto auto; min-width: 160px; padding: 5px 0 5px 19px; }
+.client-leads-map__count svg { color: var(--terra); grid-row: span 2; }
+.client-leads-map__count strong { font-family: "DM Serif Display", serif; font-size: 31px; font-weight: 400; line-height: 1; }
+.client-leads-map__count span { color: #687378; font-size: 8px; font-weight: 800; letter-spacing: .09em; line-height: 1.35; text-transform: uppercase; }
+.client-leads-map__legend { align-items: center; border-bottom: 1px solid var(--line); color: #56666d; display: flex; font-size: 11px; gap: 8px; line-height: 1.45; margin-top: 30px; padding: 0 0 15px; }
+.client-leads-map__legend svg { color: var(--terra); flex: 0 0 auto; }
+.client-leads-map__canvas { height: 490px !important; margin-top: 18px; width: 100%; }
+.client-leads-map__empty { align-items: center; background-color: #f4f1ea; background-image: linear-gradient(rgba(17,47,63,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(17,47,63,.04) 1px, transparent 1px); background-size: 25px 25px; display: flex; flex-direction: column; justify-content: center; margin-top: 25px; min-height: 230px; padding: 30px; text-align: center; }
+.client-leads-map__empty svg { color: var(--terra); }
+.client-leads-map__empty h3 { font-size: 27px; margin: 13px 0 6px; }
+.client-leads-map__empty p { color: #667277; font-size: 12px; line-height: 1.6; margin: 0; max-width: 430px; }
+.client-map-pin { align-items: center; background: #112f3f; border: 3px solid #fffdf8; border-radius: 999px; box-shadow: 0 4px 13px rgba(17,47,63,.32); color: #fffdf8; cursor: pointer; display: flex; font-family: Manrope, sans-serif; font-size: 11px; font-weight: 800; height: 34px; justify-content: center; min-width: 34px; outline-offset: 3px; padding: 0 8px; position: relative; }
+.client-map-pin::after { border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 9px solid #112f3f; bottom: -8px; content: ""; height: 0; left: 50%; position: absolute; transform: translateX(-50%); width: 0; }
+.client-map-pin:hover, .client-map-pin:focus-visible { background: #d95f42; }
+.client-map-popover { color: #112f3f; font-family: Manrope, sans-serif; padding: 4px 3px 7px; width: min(300px, calc(100vw - 70px)); }
+.client-map-popover > p { color: #112f3f; font-family: "DM Serif Display", serif; font-size: 22px; line-height: 1; margin: 0 0 5px; }
+.client-map-popover > small { color: #6d7777; display: block; font-size: 9px; line-height: 1.4; }
+.client-map-popover__cards { display: grid; gap: 8px; margin-top: 14px; padding: 0 9px 4px 0; }
+.client-map-card { background: #fffdf8; border-left: 2px solid #d95f42; box-shadow: 0 4px 12px rgba(17,47,63,.12); display: grid; gap: 3px; padding: 10px 12px; position: relative; transform: translate(calc(var(--card-step) * 7px), calc(var(--card-step) * 5px)); transition: transform .18s cubic-bezier(.23,1,.32,1); }
+.client-map-card::before { border-right: 1px solid #d95f42; content: ""; height: 14px; left: -10px; position: absolute; top: 18px; transform: rotate(26deg); transform-origin: right center; width: 10px; }
+.client-map-card:hover { transform: translate(calc(var(--card-step) * 7px + 3px), calc(var(--card-step) * 5px - 2px)); }
+.client-map-card strong { font-size: 12px; }
+.client-map-card span { color: #667277; font-size: 10px; line-height: 1.35; }
+.client-map-card small { color: #a14a37; font-size: 8px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.client-map-card a { color: #112f3f; font-size: 9px; font-weight: 800; letter-spacing: .06em; margin-top: 2px; text-decoration: underline; text-underline-offset: 3px; text-transform: uppercase; }
+@media (max-width: 650px) { .client-leads-map__heading { flex-direction: column; gap: 17px; } .client-leads-map__count { border-left: 0; border-top: 1px solid var(--line); padding: 14px 0 0; width: 100%; } .client-leads-map__canvas { height: 390px !important; } }
