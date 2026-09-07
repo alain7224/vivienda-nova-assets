@@ -29,6 +29,8 @@ describe("getDefaultPublicSiteSettings", () => {
       whatsappStyle: "round",
       whatsappAnimationEnabled: 1,
       whatsappAnimationSeconds: 30,
+      cryptoEnabled: 0,
+      cryptoAcceptedTypes: JSON.stringify(["BTC", "ETH", "USDC"]),
     });
   });
 });

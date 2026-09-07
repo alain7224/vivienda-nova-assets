@@ -152,8 +152,16 @@ export const siteVisits = mysqlTable("siteVisits", {
   visitorId: varchar("visitorId", { length: 80 }).notNull(),
   locale: varchar("locale", { length: 12 }).notNull(),
   page: varchar("page", { length: 200 }).notNull(),
+  /** Vivienda vista, cuando la visita corresponde a una ficha concreta. */
+  propertyId: int("propertyId"),
+  /** Origen de la visita, si el navegador lo comparte. */
+  referrer: varchar("referrer", { length: 500 }),
+  deviceType: mysqlEnum("deviceType", ["mobile", "tablet", "desktop"]),
+  actionType: mysqlEnum("actionType", ["view", "scroll", "contact", "reserve"]).default("view").notNull(),
+  /** Porcentaje máximo de desplazamiento registrado en la página (0-100). */
+  scrollDepth: int("scrollDepth"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-}, (table) => [index("site_visits_visitor_idx").on(table.visitorId), index("site_visits_created_idx").on(table.createdAt)]);
+}, (table) => [index("site_visits_visitor_idx").on(table.visitorId), index("site_visits_created_idx").on(table.createdAt), index("site_visits_property_idx").on(table.propertyId), index("site_visits_action_idx").on(table.actionType)]);
 
 /** Operaciones que el administrador confirma después de recibir la información del vendedor externo. */
 export const commissionOperations = mysqlTable("commissionOperations", {
@@ -191,7 +199,7 @@ export const siteSettings = mysqlTable("siteSettings", {
   bannerColor: varchar("bannerColor", { length: 24 }).default("#fffdf8").notNull(),
   bannerHeight: int("bannerHeight").default(36).notNull(),
   bannerRotationSeconds: int("bannerRotationSeconds").default(5).notNull(),
-  cardStyle: mysqlEnum("cardStyle", ["flat", "three_d", "shadow", "frame"]).default("flat").notNull(),
+  cardStyle: mysqlEnum("cardStyle", ["flat", "three_d", "shadow", "frame", "grid", "minimal"]).default("flat").notNull(),
   enabledLocales: varchar("enabledLocales", { length: 1000 }).default("es,en,nl,de,sv,no,fr,ro,ru,zh-CN,de-CH,fr-CH,it-CH").notNull(),
   /** Lista JSON de vídeos breves y optimizados para el bloque editorial de la portada. */
   heroVideos: text("heroVideos"),
@@ -216,6 +224,10 @@ export const siteSettings = mysqlTable("siteSettings", {
   whatsappStyle: mysqlEnum("whatsappStyle", ["round", "outlined", "pill"]).default("round").notNull(),
   whatsappAnimationEnabled: int("whatsappAnimationEnabled").default(1).notNull(),
   whatsappAnimationSeconds: int("whatsappAnimationSeconds").default(30).notNull(),
+  /** Interruptor global: solo muestra una nota visual de criptomonedas aceptadas; no procesa pagos. */
+  cryptoEnabled: int("cryptoEnabled").default(0).notNull(),
+  /** Lista JSON de siglas visibles, por ejemplo ["BTC","ETH","USDC"]. */
+  cryptoAcceptedTypes: text("cryptoAcceptedTypes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -228,7 +240,7 @@ export const propertySections = mysqlTable("propertySections", {
   placement: mysqlEnum("placement", ["home", "property"]).default("home").notNull(),
   /** Lista JSON de IDs seleccionados por el administrador; máximo cinco por sección. */
   propertyIds: text("propertyIds").notNull(),
-  cardStyle: mysqlEnum("cardStyle", ["flat", "three_d", "shadow", "frame"]).default("shadow").notNull(),
+  cardStyle: mysqlEnum("cardStyle", ["flat", "three_d", "shadow", "frame", "grid", "minimal"]).default("shadow").notNull(),
   background: varchar("background", { length: 24 }).default("#eef2ee").notNull(),
   active: int("active").default(1).notNull(),
   sortOrder: int("sortOrder").default(0).notNull(),
